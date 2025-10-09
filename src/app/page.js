@@ -1,6 +1,9 @@
 'use client';
+import WalletConnection from './component/WalletConnection';
 import React, { useState } from 'react';
 import CryptoJS from 'crypto-js';
+import { useWallet } from "@solana/wallet-adapter-react";
+
 
 export default function UploadForm() {
   const [hash, setHash] = useState('');
@@ -21,12 +24,15 @@ export default function UploadForm() {
   return (
     <div className="flex flex-col items-center p-6">
 
+        <WalletConnection/>
       <p>
         Upload a file to compute its SHA256 hash:
       </p>
-      <p>Find your </p>
       <input type="file" onChange={handleFileUpload} className="mb-4" />
       {hash && <p className="text-green-500">SHA256: {hash}</p>}
+
+      <div className="">
+      </div>
     </div>
   );
 }
