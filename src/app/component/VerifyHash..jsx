@@ -4,6 +4,8 @@ import { Connection, PublicKey, Transaction, SystemProgram, clusterApiUrl } from
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
+import bs58 from "bs58";
+
 
 export default function VerifyHash() {
 
@@ -49,7 +51,8 @@ export default function VerifyHash() {
 
 
                 if (programId === MEMO_PROGRAM_ID.toString()) {
-                    const memoData = Buffer.from(ix.data).toString("utf8");
+                    const memoBytes = bs58.decode(ix.data);
+                    const memoData = new TextDecoder("utf-8").decode(memoBytes);
 
                     console.log("📝 Memo data:", memoData);
 
