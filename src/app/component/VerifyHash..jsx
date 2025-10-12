@@ -70,20 +70,25 @@ export default function VerifyHash() {
 
 
     return (
-        <div className="flex flex-col items-center p-6 border border-red-600 m-28">
-            <h2 className="text-2xl font-bold mb-4">Verify File Hash</h2>
-
-
-            <p>
+        <div className="flex flex-col items-center p-6 border border-gray-800 m-28 bg-black text-white rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4 text-white">Verify File Hash</h2>
+            <p className="mb-2 text-gray-300">
                 Upload a file to compute its SHA256 hash:
             </p>
-            <input type="file" onChange={handleFileUpload} className="mb-4" />
-            {hash && <p className="text-green-500">SHA256: {hash}</p>}
-
+            <input
+                type="file"
+                onChange={handleFileUpload}
+                className="mb-4 bg-gray-900 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:border-white"
+            />
+            {hash && (
+                <p className="text-gray-100 bg-gray-800 rounded px-2 py-1 mt-2 break-all">
+                    SHA256: <span className="font-mono">{hash}</span>
+                </p>
+            )}
             <button
                 onClick={() => verifyHashOnChain(hash, publicKey.toString())}
                 disabled={!hash}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+                className="mt-4 px-4 py-2 bg-gray-900 text-white border border-gray-700 rounded hover:bg-gray-800 disabled:opacity-50 transition"
             >
                 Verify Hash on Solana
             </button>
