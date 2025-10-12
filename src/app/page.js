@@ -87,7 +87,7 @@ export default function UploadForm() {
       </button>
 
       <div className="">
-        <VerifyHash />
+        {/* <VerifyHash /> */}
       </div>
     </div>
   );
