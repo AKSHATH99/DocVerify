@@ -7,8 +7,8 @@ const supabase = createClient(
 
 export async function POST(request) {
 
-    console.log("SUPABASE_SERVICE_KEY:",process.env.SUPABASE_SERVICE_KEY);
-    console.log("NEXT_PUBLIC_SUPABASE_URL:",process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("SUPABASE_SERVICE_KEY:", process.env.SUPABASE_SERVICE_KEY);
+    console.log("NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
     try {
         const { wallet_address } = await request.json()
         if (!wallet_address)
@@ -22,6 +22,7 @@ export async function POST(request) {
 
         if (error || !data)
             return Response.json({ error: 'User not found' }, { status: 404 })
+
 
         return Response.json({ user: data }, { status: 200 })
     } catch (err) {
