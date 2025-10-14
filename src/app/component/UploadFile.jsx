@@ -6,6 +6,8 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
 import bs58 from 'bs58';
+import LoaderAnimation from './LoaderAnimation';
+import { Trash } from 'lucide-react';
 
 export default function UploadFile({ onFileHashComputed }) {
 
@@ -16,6 +18,8 @@ export default function UploadFile({ onFileHashComputed }) {
     const [fileSize, setFileSize] = useState(0);
     const [fileType, setFileType] = useState("");
     const [filename, setFileName] = useState("");
+    const [showLink, setShowLink] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
@@ -75,6 +79,7 @@ export default function UploadFile({ onFileHashComputed }) {
 
     async function storeHashOnChain(hash) {
         console.log("hash storing:", hash);
+        setUploading(true);
 
         // 1️⃣ Create transaction
         const transaction = new Transaction().add({
@@ -112,7 +117,7 @@ export default function UploadFile({ onFileHashComputed }) {
                 //Adding to database
                 const userid = localStorage.getItem('user_id');
                 const res = await uploadFileDetails({
-                    user_id: userid,    
+                    user_id: userid,
                     file_name: filename,
                     file_hash: memoData,
                     transaction_signature: sig,
@@ -121,6 +126,9 @@ export default function UploadFile({ onFileHashComputed }) {
                     note: note,
                     wallet_address: wallet.publicKey.toString()
                 });
+                // show verification link
+                setShowLink(true);
+                setUploading(false);
             }
         }
     }
@@ -129,18 +137,22 @@ export default function UploadFile({ onFileHashComputed }) {
             <p className="text-lg font-semibold text-gray-900 mb-6">
                 Upload a file to compute its SHA256 hash:
             </p>
-            <input
+            <div className='flex'>            
+                <input
                 type="file"
                 onChange={handleFileUpload}
                 className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black mb-6"
             />
+                {hash && <button onClick={() => { setHash(''); setShowLink(false); setNote(''); }} className='ml-2 -mt-5 text-red-600 hover:bg-red-100 p-2 rounded'><Trash size={16} /></button>}
+            </div>
+
             {hash && (
                 <div>
                     <p className="text-sm text-gray-800 bg-gray-100 border border-gray-200 rounded px-3 py-2 mb-4">
                         <span className="font-medium text-black">SHA256:</span>
                         <p className='truncate'>{hash}</p>
                     </p>
-                    <input type="text" placeholder='Add note for the file ; degree-certificate' value={note} onChange={(e) => { setNote(e.target.value) }} className="w-full my-3 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    <input type="text" placeholder='Add note for the file ; degree-certificate' value={note} onChange={(e) => { setNote(e.target.value) }} className="w-full my-3 border text-black border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
                 </div>
             )}
 
@@ -149,8 +161,34 @@ export default function UploadFile({ onFileHashComputed }) {
                 disabled={!hash}
                 className="w-full py-2 px-4 bg-black text-white font-semibold rounded-lg shadow hover:bg-gray-900 transition disabled:opacity-50"
             >
-                Store Hash on Solana
+                {uploading ? <LoaderAnimation /> : "Store Hash on Solana"}
             </button>
+            {showLink && (
+                <div className="mt-4 p-3 border      rounded-lg bg-gray-50">
+                    <p className="text-slate-500 font-medium mb-2">
+                        File details uploaded successfully!
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            readOnly
+                            value={`${window.location.origin}/verify/${hash}`}
+                            className="flex-1 bg-white border text-black  rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                            onFocus={(e) => e.target.select()}
+                        />
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/verify/${hash}`)
+                            }}
+                            className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-green-700 text-sm transition"
+                        >
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }
