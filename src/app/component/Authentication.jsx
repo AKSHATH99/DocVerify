@@ -61,6 +61,8 @@ export default function Authentication({ onClose }) {
                 const data = await loginRes.json();
                 setSuccess("Login successful!");
                 console.log("User logged in:", data.user);
+                localStorage.setItem('user_id', data.user.id);
+                localStorage.setItem('wallet_address', data.user.wallet_address);
                 return;
             }
 
