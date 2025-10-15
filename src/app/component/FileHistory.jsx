@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FileText, Hash, HardDrive, FileType } from "lucide-react";
+import { FileText, Hash, HardDrive, FileType, Search } from "lucide-react";
 
 export default function FileHistory() {
     const [files, setFiles] = useState([]);
@@ -46,9 +46,27 @@ export default function FileHistory() {
         <div>
             <h2 className="text-lg font-semibold mb-4 flex items-center space-x-2">
                 <FileText size={18} className="text-blue-500" />
-                <span>Your  Files</span>
+                <span>Your Files</span>
             </h2>
 
+            <div className="relative my-5 mt-12">
+                <input
+                    type="text"
+                    placeholder="Search files..."
+                    className="border border-gray-700 rounded-md p-2 pl-9 bg-gray-800 text-gray-200 w-full"
+                />
+                <Search
+                    size={18}
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+            </div>
+
+            <div className="flex my-4 mb-10 items-center mt-1 text-xs text-gray-500 space-x-2 truncate gap-2">
+                filter by:
+                <span className="bg-gray-800/60 hover:cursor-pointer hover:bg-gray-800 rounded-md p-2 transition-all duration-300 shadow-sm border border-gray-700">Type</span>
+                <span className="bg-gray-800/60 hover:cursor-pointer hover:bg-gray-800 rounded-md p-2 transition-all duration-300 shadow-sm border border-gray-700">Date</span>
+                <span className="bg-gray-800/60 hover:cursor-pointer hover:bg-gray-800 rounded-md p-2 transition-all duration-300 shadow-sm border border-gray-700">Wallet Address</span>
+            </div>
             <ul className="space-y-4">
                 {files.map((file) => (
                     <li
