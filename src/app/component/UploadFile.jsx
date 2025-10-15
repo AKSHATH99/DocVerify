@@ -7,7 +7,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
 import bs58 from 'bs58';
 import LoaderAnimation from './LoaderAnimation';
-import { Trash } from 'lucide-react';
+import { FileText, Trash } from 'lucide-react';
 
 export default function UploadFile({ onFileHashComputed }) {
 
@@ -22,8 +22,10 @@ export default function UploadFile({ onFileHashComputed }) {
 
   const [showLink, setShowLink] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [fileloading, setFileLoading] = useState(false);
 
   const handleFileUpload = async (e) => {
+    setFileLoading(true);
     console.log("Files selected:", e.target.files);
     const selectedFiles = Array.from(e.target.files);
 
@@ -61,7 +63,8 @@ export default function UploadFile({ onFileHashComputed }) {
             fileType: file.type || "Unknown",
             hash: sha256Hash,
             note: "",
-            estimatedSol
+            estimatedSol,
+            url: URL.createObjectURL(file)
           });
         };
 
@@ -73,6 +76,7 @@ export default function UploadFile({ onFileHashComputed }) {
 
     const results = await Promise.all(filePromises);
     setFiles(prev => [...prev, ...results]); // append new hashed files to your state
+    setFileLoading(false);
   };
 
   useEffect(() => {
@@ -193,6 +197,20 @@ export default function UploadFile({ onFileHashComputed }) {
       setUploading(false);
     }
   }
+  const getFilePreview = (fileObj) => {
+    const ext = fileObj.filename.split('.').pop().toLowerCase();
+
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+      return <img src={fileObj.url} alt={fileObj.filename} className="w-20 h-20 object-cover rounded" />;
+    } else if (ext === 'pdf') {
+      return <FileText className="w-10 h-10 text-red-600" />; // Your PDF icon component
+    } else if (ext === 'txt') {
+      return <FileText className="w-10 h-10 text-gray-600" />; // Your TXT icon component
+    } else {
+      return <FileText className="w-10 h-10 text-gray-400" />; // Generic file icon
+    }
+  };
+
 
   async function storeAllFiles() {
     for (const file of files) {
@@ -210,12 +228,12 @@ export default function UploadFile({ onFileHashComputed }) {
         Upload a file to compute its SHA256 hash:
       </p>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 ">
         <input
           type="file"
           multiple
           onChange={handleFileUpload}
-          className="block w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="block w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 h-14 p-4 "
         />
         {files.length > 0 && (
           <button
@@ -228,18 +246,23 @@ export default function UploadFile({ onFileHashComputed }) {
       </div>
 
       {files.length > 0 && (
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 flex flex-wrap gap-6">
           {files.map((fileObj, index) => (
             <div
               key={index}
-              className="p-5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700/40"
+              className="p-5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700/40 w-full sm:w-[48%] lg:w-[%] flex-shrink-0"
             >
-              <span className="font-medium text-gray-900 dark:text-gray-100">SHA256:</span>
-              <p className="truncate text-gray-800 dark:text-gray-300">{fileObj.hash}</p>
-              <p className="truncate text-gray-800 dark:text-gray-300">
-                file : {fileObj.filename}
+              {getFilePreview(fileObj)}
+              <p className="truncate text-gray-800 dark:text-gray-300 text-lg">
+                {fileObj.filename}
               </p>
-              <p className="text-sm text-gray-700 dark:text-gray-400">
+
+              <div className="bg-gray-800/60 my-4 hover:bg-gray-800 rounded-xl p-3 transition-all duration-300 shadow-sm border border-gray-700">
+                <span className="f text-gray-900 dark:text-gray-100">SHA256:</span>
+                <p className="truncate text-gray-800 dark:text-gray-300">{fileObj.hash}</p>
+              </div>
+
+              <p className="text-lg text-green-300">
                 Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
               </p>
 
@@ -269,8 +292,13 @@ export default function UploadFile({ onFileHashComputed }) {
             </div>
           ))}
         </div>
-      )}
 
+      )}
+      {fileloading && (
+        <div className="mt-4">
+          <LoaderAnimation />
+        </div>
+      )}
       <button
         onClick={() => storeAllFiles()}
         disabled={files.length === 0 || uploading}
