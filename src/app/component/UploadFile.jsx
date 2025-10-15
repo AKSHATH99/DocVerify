@@ -27,13 +27,33 @@ export default function UploadFile({ onFileHashComputed }) {
         console.log("Files selected:", e.target.files);
         const selectedFiles = Array.from(e.target.files);
 
-        const filePromises = selectedFiles.map(file => {
+        const filePromises = selectedFiles.map(async (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
 
-                reader.onload = () => {
+                reader.onload = async () => {
                     const wordArray = CryptoJS.lib.WordArray.create(reader.result);
                     const sha256Hash = CryptoJS.SHA256(wordArray).toString();
+
+                    let estimatedSol = 0;
+
+                    try {
+                        const latestBlockhash = await connection.getLatestBlockhash(); // 👈 get a valid blockhash
+
+                        const dummyTx = new Transaction({
+                            feePayer: wallet.publicKey || new PublicKey("11111111111111111111111111111111"), // fallback dummy pubkey
+                            recentBlockhash: latestBlockhash.blockhash, // 👈 set it properly
+                        }).add({
+                            keys: [],
+                            programId: MEMO_PROGRAM_ID,
+                            data: Buffer.from(sha256Hash, "utf8"),
+                        });
+
+                        const fee = await connection.getFeeForMessage(dummyTx.compileMessage());
+                        estimatedSol = fee.value / 1e9; // lamports → SOL
+                    } catch (err) {
+                        console.error("Error estimating fee:", err);
+                    }
 
                     resolve({
                         filename: file.name || "Unknown",
@@ -41,6 +61,7 @@ export default function UploadFile({ onFileHashComputed }) {
                         fileType: file.type || "Unknown",
                         hash: sha256Hash,
                         note: "",
+                        estimatedSol
                     });
                 };
 
@@ -195,7 +216,7 @@ export default function UploadFile({ onFileHashComputed }) {
                     onChange={handleFileUpload}
                     className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black mb-6"
                 />
-                {files.length > 0 && <button onClick={() => { setHash(''); setShowLink(false); setNote(''); }} className='ml-2 -mt-5 text-red-600 hover:bg-red-100 p-2 rounded'><Trash size={16} /></button>}
+                {files.length > 0 && <button onClick={() => { setFiles([]); }} className='ml-2 -mt-5 text-red-600 hover:bg-red-100 p-2 rounded'><Trash size={16} /></button>}
             </div>
 
             {files.length > 0 && (
@@ -205,6 +226,9 @@ export default function UploadFile({ onFileHashComputed }) {
                             <span className="font-medium text-black">SHA256:</span>
                             <p className='truncate text-black'>{fileObj.hash}</p>
                             <p className='truncate text-black'> file : {fileObj.filename}</p>
+                            <p className="text-sm  text-black">
+                                Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
+                            </p>
                             <input
                                 type="text"
                                 placeholder="Add note for the file (e.g., degree certificate)"
