@@ -57,6 +57,16 @@ export default function FileHistory() {
         return () => window.removeEventListener("login-success", handler);
     }, []);
 
+    
+    useEffect(() => {
+        const handler = () => {
+            const userId = localStorage.getItem("user_id");
+            fetchFiles(userId);
+        };
+        window.addEventListener("file-uploaded", handler);
+        return () => window.removeEventListener("file-uploaded", handler);
+    }, []);
+
     useEffect(() => {
         const handler = () => {
             setFiles([]);
