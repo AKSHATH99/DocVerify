@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWallet } from '@solana/wallet-adapter-react';
 
-export default function Authentication({ onClose }) {
+export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
     const [authMethod, setAuthMethod] = useState("");
     const [formData, setFormData] = useState({ email: "", name: "", walletAddress: "" });
     const [loading, setLoading] = useState(false);
@@ -35,6 +35,12 @@ export default function Authentication({ onClose }) {
 
         setSuccess("Account created successfully!");
         console.log("User signed up:", data.user);
+        localStorage.setItem('user_id', data.user.id);
+        localStorage.setItem('wallet_address', data.user.wallet_address);
+        setAuthMethod("");
+        setLoggedIn(true);
+        window.dispatchEvent(new Event("login-success"));
+
     };
 
     const handleWalletAuth = async () => {
@@ -63,6 +69,8 @@ export default function Authentication({ onClose }) {
                 console.log("User logged in:", data.user);
                 localStorage.setItem('user_id', data.user.id);
                 localStorage.setItem('wallet_address', data.user.wallet_address);
+                setLoggedIn(true);
+                window.dispatchEvent(new Event("login-success"));
                 return;
             }
 

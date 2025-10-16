@@ -8,32 +8,73 @@ export default function FileHistory() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState(""); // Type / Date / Wallet
     const [sortOrder, setSortOrder] = useState("newest"); // for Date filter
+    const [loggedIn, setLoggedIn] = useState(false);
+    const [userId, setUserId] = useState(null);
+
+    const fetchFiles = async (userId) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const response = await fetch(`/api/file/fetchAllFiles?userId=${userId}`);
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error || "Failed to fetch files");
+
+            setFiles(data.files || []);
+        } catch (err) {
+            console.error("Error fetching files:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     useEffect(() => {
-        const userId = localStorage.getItem("user_id");
-        if (!userId) return;
+        const userIdfromlocalstorage = localStorage.getItem("user_id");
+        console.log("User ID from localStorage:", userIdfromlocalstorage);
+        if (!userIdfromlocalstorage) {
+            setLoggedIn(false);
+            return;
+        } else {
+            setLoggedIn(true);
+            setUserId(userIdfromlocalstorage);
+            fetchFiles(userIdfromlocalstorage);
+        }
 
-        const fetchFiles = async () => {
-            setLoading(true);
-            setError("");
 
-            try {
-                const response = await fetch(`/api/file/fetchAllFiles?userId=${userId}`);
-                const data = await response.json();
+    }, []);
 
-                if (!response.ok) throw new Error(data.error || "Failed to fetch files");
-
-                setFiles(data.files || []);
-            } catch (err) {
-                console.error("Error fetching files:", err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
+    useEffect(() => {
+        const handler = () => {
+            const userId = localStorage.getItem("user_id");
+            fetchFiles(userId);
+            setLoggedIn(true);
         };
 
-        fetchFiles();
+        window.addEventListener("login-success", handler);
+        return () => window.removeEventListener("login-success", handler);
     }, []);
+
+    useEffect(() => {
+        const handler = () => {
+            setFiles([]);
+            setLoggedIn(false);
+        };
+
+        window.addEventListener("logout-success", handler);
+        return () => window.removeEventListener("logout-success", handler);
+    }, []);
+
+    useEffect(() => {
+        if (loggedIn) {
+            const userId = localStorage.getItem("user_id");
+            fetchFiles(userId);
+        }
+    }, [loggedIn]);
+
+
 
     // Filtering and sorting logic
     const filteredFiles = files
@@ -65,7 +106,8 @@ export default function FileHistory() {
 
     if (loading) return <p className="text-gray-400 text-sm animate-pulse">Loading files...</p>;
     if (error) return <p className="text-red-400 text-sm">Error: {error}</p>;
-    if (!files.length) return <p className="text-gray-500 text-sm">No files uploaded yet.</p>;
+    if (!loggedIn) return <p className="text-gray-500 text-sm">Please sign in to view your files.</p>;
+    if (!files.length) return <p className="text-gray-500 text-sm">No files uploaded yet.</p>
 
     return (
         <div>
