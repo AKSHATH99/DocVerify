@@ -1,14 +1,16 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import WalletConnection from "./WalletConnection";
 import Authentication from "./Authentication";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Moon, Sun, ChevronDown } from "lucide-react";
+import { Moon, Sun, ChevronDown, Wallet, LogOut, User } from "lucide-react";
 import {
     WalletMultiButton,
     WalletDisconnectButton,
     WalletModalProvider
 } from "@solana/wallet-adapter-react-ui";
 import { useConnection } from '@solana/wallet-adapter-react';
+import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+
 
 const HeaderComponent = () => {
     const [isDarkMode, setIsDarkMode] = React.useState(true);
@@ -17,14 +19,60 @@ const HeaderComponent = () => {
     const [openAccountMenu, setOpenAccountMenu] = React.useState(false);
     const { connection } = useConnection();
     const { publicKey, sendTransaction, signMessage, connected, connecting, disconnecting } = useWallet();
+    const [balance, setBalance] = React.useState(null);
+    const dropdownRef = useRef(null);
+    const buttonRef = useRef(null);
 
     useEffect(() => {
         const userId = localStorage.getItem("user_id");
         if (userId) setLoggedIn(true);
     }, []);
+
     useEffect(() => {
         document.documentElement.classList.toggle("dark", isDarkMode);
     }, [isDarkMode]);
+
+    // Click outside handler
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target) &&
+                buttonRef.current &&
+                !buttonRef.current.contains(event.target)
+            ) {
+                setOpenAccountMenu(false);
+            }
+        };
+
+        if (openAccountMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [openAccountMenu]);
+
+    async function getSolBalance(pubKeyString) {
+        const endpoint = clusterApiUrl("devnet");
+        const conn = new Connection(endpoint, "confirmed");
+        const pubkey = new PublicKey(pubKeyString);
+        const lamports = await conn.getBalance(pubkey, "confirmed");
+        const sol = lamports / 1_000_000_000;
+        return { lamports, sol };
+    }
+
+    useEffect(() => {
+        if (publicKey) {
+            getSolBalance(publicKey).then(balance => {
+                console.log("SOL Balance:", balance.sol);
+                setBalance(balance.sol);
+            }).catch(err => {
+                console.error("Error fetching balance:", err);
+            });
+        }
+    }, [publicKey]);
 
     return (
         <header
@@ -59,7 +107,6 @@ const HeaderComponent = () => {
 
                 {/* Controls Section */}
                 <div className="flex items-center space-x-6">
-
                     {/* Theme Toggle */}
                     <button
                         onClick={() => setIsDarkMode(!isDarkMode)}
@@ -73,10 +120,26 @@ const HeaderComponent = () => {
                     </button>
 
                     {/* Auth Button */}
-                    {loggedIn ? <p className=" flex gap-5 p-2 rounded-md transition-all duration-300 shadow-sm border border-gray-700 cursor-pointer">
-                        <WalletMultiButton className="w-full bg-blue-600 text-white rounded-xl shadow-md px-6 py-3 font-medium hover:bg-blue-700 transition-all" />
-                        <ChevronDown className="mt-3" onClick={() => { setOpenAccountMenu(!openAccountMenu) }} />
-                    </p> : (
+                    {loggedIn ? (
+                        <div className="relative">
+                            <div
+                                ref={buttonRef}
+                                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-300 shadow-sm cursor-pointer ${isDarkMode
+                                    ? "bg-gray-800/50 border border-gray-700 hover:bg-gray-800"
+                                    : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
+                                    }`}
+                            >
+                                <WalletMultiButton className="wallet-adapter-button-custom" />
+                                <button
+                                    onClick={() => setOpenAccountMenu(!openAccountMenu)}
+                                    className={`p-1 rounded-md transition-all duration-200 ${openAccountMenu ? "rotate-180" : ""
+                                        } ${isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}
+                                >
+                                    <ChevronDown size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
                         <button
                             onClick={() => setOpenModal(true)}
                             className={`text-sm font-medium rounded-lg px-4 py-2 transition-all duration-300 ${isDarkMode
@@ -93,24 +156,66 @@ const HeaderComponent = () => {
             {/* Authentication Modal */}
             {openModal && <Authentication onClose={() => setOpenModal(false)} loggedIn={loggedIn} setLoggedIn={setLoggedIn} />}
 
-            {/* Account Menu */}
-            {openAccountMenu && <div className={`absolute top-16 right-6 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-6`}>
-                <div className="p-4">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">Account Settings</p>
-                    <button
-                        onClick={() => {
-                            localStorage.removeItem("user_id");
-                            setLoggedIn(false);
-                            setOpenAccountMenu(false);
-                            window.dispatchEvent(new Event("logout-success"));
-                        }}
-                        className="w-full text-left text-sm text-red-600 hover:text-red-800"
-                    >
-                        Sign Out
-                    </button>
-                    {connected && <WalletDisconnectButton className="w-full bg-gray-100 text-gray-700 rounded-xl shadow-sm px-6 py-3 font-medium hover:bg-gray-200 transition-all" />
-                    }                </div>
-            </div>}
+            {/* Enhanced Account Menu Dropdown */}
+            {openAccountMenu && (
+                <div
+                    ref={dropdownRef}
+                    className={`absolute top-20 right-6 w-72 rounded-xl shadow-2xl z-50 overflow-hidden transition-all duration-300 ${isDarkMode
+                        ? "bg-gray-800 border border-gray-700"
+                        : "bg-white border border-gray-200"
+                        }`}
+                >
+                    {/* Header Section */}
+                    <div className={`px-6 py-4 border-b ${isDarkMode ? "border-gray-700 bg-gray-800/50" : "border-gray-200 bg-gray-50"}`}>
+                    </div>
+
+                    {/* Balance Section */}
+                    <div className={`px-6 py-4 ${isDarkMode ? "bg-gray-800/30" : "bg-gray-50/50"}`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Wallet size={16} className={isDarkMode ? "text-purple-400" : "text-purple-600"} />
+                                <span className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                    SOL Balance
+                                </span>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-sm font-semibold ${isDarkMode
+                                ? "bg-gradient-to-r from-purple-600/20 to-blue-600/20 text-purple-400"
+                                : "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700"
+                                }`}>
+                                {balance !== null ? `${balance.toFixed(4)} SOL` : "Loading..."}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions Section */}
+                    <div className="px-4 py-3 space-y-2">
+                        {connected && (
+                            <div className="pb-2 border-b border-gray-700/50">
+                                <WalletDisconnectButton className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${isDarkMode
+                                    ? "bg-gray-700/50 text-gray-300 hover:bg-gray-700"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    }`} />
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem("user_id");
+                                setLoggedIn(false);
+                                setOpenAccountMenu(false);
+                                window.dispatchEvent(new Event("logout-success"));
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${isDarkMode
+                                ? "text-red-400 hover:bg-red-500/10"
+                                : "text-red-600 hover:bg-red-50"
+                                }`}
+                        >
+                            <LogOut size={16} />
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            )}
         </header>
     );
 };
