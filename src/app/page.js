@@ -23,7 +23,6 @@ export default function UploadForm() {
         <main className="flex-1 p-8 flex flex-col items-center justify-start space-y-10 overflow-y-auto">
           {(activeModal === "both" || activeModal === "verify") && (
             <div className="w-full max-w-4xl bg-gray-900/70 rounded-2xl border border-gray-800 p-6 shadow-md">
-              <h2 className="text-xl font-semibold mb-4 text-center text-purple-400">Verify File Hash</h2>
               <VerifyHash setActiveModal={setActiveModal} />
             </div>
           )}
