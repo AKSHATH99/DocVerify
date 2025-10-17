@@ -9,7 +9,7 @@ import bs58 from 'bs58';
 import LoaderAnimation from './LoaderAnimation';
 import { FileText, Trash, CircleCheckBig } from 'lucide-react';
 
-export default function UploadFile({ onFileHashComputed }) {
+export default function UploadFile({ setActiveModal }) {
 
   const [hash, setHash] = useState('');
   const wallet = useWallet();
@@ -250,7 +250,7 @@ export default function UploadFile({ onFileHashComputed }) {
         <input
           type="file"
           multiple
-          onChange={handleFileUpload}
+          onChange={(e) => { handleFileUpload(e); setActiveModal("upload"); }}
           className="block w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 h-14 p-4 "
         />
         {files.length > 0 && (

@@ -7,7 +7,7 @@ import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
 import bs58 from "bs58";
 
 
-export default function VerifyHash() {
+export default function VerifyHash({setActiveModal}) {
 
     const [hash, setHash] = React.useState('');
     const { publicKey, connected } = useWallet();
@@ -70,28 +70,45 @@ export default function VerifyHash() {
 
 
     return (
-        <div className="flex flex-col items-center p-6 border border-gray-800 m-28 bg-black text-white rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-white">Verify File Hash</h2>
-            <p className="mb-2 text-gray-300">
-                Upload a file to compute its SHA256 hash:
+        <div className="w-full flex flex-col items-start justify-center mt-16 px-8">
+            {/* Heading */}
+            <h2 className="text-xl font-semibold text-white mb-2">
+                Verify File Hash
+            </h2>
+
+            {/* Subtext */}
+            <p className="text-gray-400 mb-4">
+                Upload a file to compute its SHA256 hash and verify its authenticity on Solana
             </p>
-            <input
-                type="file"
-                onChange={handleFileUpload}
-                className="mb-4 bg-gray-900 text-gray-200 border border-gray-700 rounded px-2 py-1 focus:outline-none focus:border-white"
-            />
+
+            {/* File input */}
+            <div className="w-full max-w-2xl mb-6">
+                <input
+                    type="file"
+                    onChange={(e) => { handleFileUpload(e); setActiveModal("verify"); }}
+                    className="w-full px-4 py-2 bg-[#1E1E1E] text-gray-200 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600 transition"
+                />
+            </div>
             {hash && (
-                <p className="text-gray-100 bg-gray-800 rounded px-2 py-1 mt-2 break-all">
-                    SHA256: <span className="font-mono">{hash}</span>
-                </p>
+                <div className="w-full max-w-2xl mb-4 bg-gray-800 border border-gray-700 rounded-md p-3 break-all">
+                    <p className="text-gray-400 text-sm mb-1">SHA256 Hash:</p>
+                    <p className="text-gray-100 font-mono text-sm">{hash}</p>
+                </div>
             )}
+
+            {/* Verify button */}
             <button
-                onClick={() => verifyHashOnChain(hash, publicKey.toString())}
+                onClick={() => verifyHashOnChain(hash, publicKey?.toString())}
                 disabled={!hash}
-                className="mt-4 px-4 py-2 bg-gray-900 text-white border border-gray-700 rounded hover:bg-gray-800 disabled:opacity-50 transition"
+                className={`w-full max-w-2xl py-3 rounded-md font-medium text-center transition
+      ${hash
+                        ? "bg-purple-600 hover:bg-purple-700 text-white"
+                        : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    }`}
             >
                 Verify Hash on Solana
             </button>
         </div>
+
     );
 }
