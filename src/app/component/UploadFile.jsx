@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import CryptoJS from 'crypto-js';
-import { Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, SystemProgram, clusterApiUrl } from "@solana/web3.js";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
@@ -23,6 +23,8 @@ export default function UploadFile({ setActiveModal }) {
   const [showLink, setShowLink] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fileloading, setFileLoading] = useState(false);
+  let estimatedSol = 0;
+
 
   const handleFileUpload = async (e) => {
     setFileLoading(true);
@@ -37,24 +39,41 @@ export default function UploadFile({ setActiveModal }) {
           const wordArray = CryptoJS.lib.WordArray.create(reader.result);
           const sha256Hash = CryptoJS.SHA256(wordArray).toString();
 
-          let estimatedSol = 0;
+          const hashAlreadyExists = await verifyHashOnChain(sha256Hash, wallet.publicKey.toString());
 
-          try {
-            const latestBlockhash = await connection.getLatestBlockhash(); // 👈 get a valid blockhash
-
-            const dummyTx = new Transaction({
-              feePayer: wallet.publicKey || new PublicKey("11111111111111111111111111111111"), // fallback dummy pubkey
-              recentBlockhash: latestBlockhash.blockhash, // 👈 set it properly
-            }).add({
-              keys: [],
-              programId: MEMO_PROGRAM_ID,
-              data: Buffer.from(sha256Hash, "utf8"),
+          if (hashAlreadyExists) {
+            console.log("Hash already exists on-chain. Skipping upload for file:", file.name);
+            setFiles(prevFiles => {
+              return prevFiles.map(f =>
+                f.hash === sha256Hash && f.filename === file.name
+                  ? { ...f, uploaded: true, actualSolUsed: 0, }
+                  : f
+              );
             });
+            // setUploading(false);
+            // setFileLoading(false);
+            // resolve(null);
+            // return;
+          } else {
 
-            const fee = await connection.getFeeForMessage(dummyTx.compileMessage());
-            estimatedSol = fee.value / 1e9; // lamports → SOL
-          } catch (err) {
-            console.error("Error estimating fee:", err);
+
+            try {
+              const latestBlockhash = await connection.getLatestBlockhash();
+
+              const dummyTx = new Transaction({
+                feePayer: wallet.publicKey || new PublicKey("11111111111111111111111111111111"),
+                recentBlockhash: latestBlockhash.blockhash,
+              }).add({
+                keys: [],
+                programId: MEMO_PROGRAM_ID,
+                data: Buffer.from(sha256Hash, "utf8"),
+              });
+
+              const fee = await connection.getFeeForMessage(dummyTx.compileMessage());
+              estimatedSol = fee.value / 1e9; // lamports → SOL
+            } catch (err) {
+              console.error("Error estimating fee:", err);
+            }
           }
 
           resolve({
@@ -63,9 +82,11 @@ export default function UploadFile({ setActiveModal }) {
             fileType: file.type || "Unknown",
             hash: sha256Hash,
             note: "",
-            estimatedSol,
+            estimatedSol: estimatedSol ? estimatedSol : 0,
             url: URL.createObjectURL(file),
-            uploaded: false
+            uploaded: false,
+            alreadyExist: hashAlreadyExists
+
           });
         };
 
@@ -76,13 +97,13 @@ export default function UploadFile({ setActiveModal }) {
 
 
     const results = await Promise.all(filePromises);
-    setFiles(prev => [...prev, ...results]); // append new hashed files to your state
+    setFiles(prev => [...prev, ...results]);
     setFileLoading(false);
   };
 
   useEffect(() => {
     files.map(fileObj => {
-      console.log("Computed hash for file:", fileObj.filename, fileObj.hash, fileObj.note);
+      console.log("Computed hash for file:", fileObj);
     })
   }, [files]);
 
@@ -135,9 +156,55 @@ export default function UploadFile({ setActiveModal }) {
   }
 
 
+  async function verifyHashOnChain(hash, walletAddress) {
+    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+    const pubKey = new PublicKey(walletAddress);
+    console.log("verifying hash:", hash);
+    console.log("public key:", pubKey.toString());
+
+    const signatures = await connection.getSignaturesForAddress(pubKey, { limit: 20 });
+
+    for (let sigInfo of signatures) {
+      const tx = await connection.getTransaction(sigInfo.signature, {
+        maxSupportedTransactionVersion: 0,
+      });
+
+      if (!tx) continue;
+      // console.log("Transaction:", tx.transaction.signatures[0]);
+
+      for (let ix of tx.transaction.message.instructions) {
+        const programId = tx.transaction.message.accountKeys[ix.programIdIndex].toString();
+        // console.log("Program ID:", programId);
+        // console.log("MEMO PROGRAM_ID:", MEMO_PROGRAM_ID.toString());
+        // console.log("Instruction:", ix);
+        // console.log("Instruction Data (base64):", ix.data);
+        // console.log("try  out",)
+
+
+        if (programId === MEMO_PROGRAM_ID.toString()) {
+          const memoBytes = bs58.decode(ix.data);
+          const memoData = new TextDecoder("utf-8").decode(memoBytes);
+
+          console.log("📝 Memo data:", memoData);
+
+          if (memoData === hash) {
+            console.log("✅ Hash found on-chain:", sigInfo.signature);
+            return true;
+          }
+        }
+      }
+
+    }
+
+    console.log("❌ Hash not found on-chain.");
+    return false;
+  }
+
+
   async function storeHashOnChainForFile(fileObj) {
     console.log("hash storing for file:", fileObj.filename, fileObj.hash);
     setUploading(true);
+
 
     try {
       const transaction = new Transaction().add({
@@ -300,18 +367,27 @@ export default function UploadFile({ setActiveModal }) {
               ) : (
                 // ⏳ Pending state
                 <>
-                  <p className="text-lg text-green-300">
-                    Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
-                  </p>
+                  {!fileObj.alreadyExist && (
+                    <>
+                      <p className="text-lg text-green-300">
+                        Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
+                      </p>
 
-                  <input
-                    type="text"
-                    placeholder="Add note for the file (e.g., degree certificate)"
-                    value={fileObj.note}
-                    onChange={(e) => handleNoteChange(index, e.target.value)}
-                    className="w-full my-3 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                      <input
+                        type="text"
+                        placeholder="Add note for the file (e.g., degree certificate)"
+                        value={fileObj.note}
+                        onChange={(e) => handleNoteChange(index, e.target.value)}
+                        className="w-full my-3 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </>
+                  )}
 
+                  {fileObj.alreadyExist && (
+                    <span className="text-sm text-yellow-600">
+                      This file's hash already exists on-chain.
+                    </span>
+                  )}
                   <div className="flex items-center gap-3 mt-2">
                     <button
                       onClick={() => handleDeleteFile(index)}
@@ -321,8 +397,8 @@ export default function UploadFile({ setActiveModal }) {
                     </button>
                     <button
                       onClick={() => storeHashOnChainForFile(fileObj)}
-                      className="px-4 py-1.5 bg-black dark:bg-purple-700 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-purple-800 transition"
-                      disabled={uploading}
+                      className={`px-4 py-1.5 bg-black dark:bg-purple-700 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-purple-800 transition ${uploading || fileObj.alreadyExist ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={uploading || fileObj.alreadyExist}
                     >
                       {uploading ? "Uploading..." : "Store on Chain"}
                     </button>
