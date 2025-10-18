@@ -7,22 +7,18 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
 import bs58 from 'bs58';
 import LoaderAnimation from './LoaderAnimation';
-import { FileText, Trash, CircleCheckBig } from 'lucide-react';
+import { FileText, Trash, CircleCheckBig, Upload, Info } from 'lucide-react';
 
 export default function UploadFile({ setActiveModal }) {
 
   const [hash, setHash] = useState('');
   const wallet = useWallet();
   const { connection } = useConnection();
-  // const [note, setNote] = useState('');
-  // const [fileSize, setFileSize] = useState(0);
-  // const [fileType, setFileType] = useState("");
-  // const [filename, setFileName] = useState("");
   const [files, setFiles] = useState([]);
-
   const [showLink, setShowLink] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fileloading, setFileLoading] = useState(false);
+  const [infoTooltip, setInfoTooltip] = useState(false);
   let estimatedSol = 0;
 
 
@@ -50,13 +46,7 @@ export default function UploadFile({ setActiveModal }) {
                   : f
               );
             });
-            // setUploading(false);
-            // setFileLoading(false);
-            // resolve(null);
-            // return;
           } else {
-
-
             try {
               const latestBlockhash = await connection.getLatestBlockhash();
 
@@ -70,7 +60,7 @@ export default function UploadFile({ setActiveModal }) {
               });
 
               const fee = await connection.getFeeForMessage(dummyTx.compileMessage());
-              estimatedSol = fee.value / 1e9; // lamports → SOL
+              estimatedSol = fee.value / 1e9;
             } catch (err) {
               console.error("Error estimating fee:", err);
             }
@@ -86,7 +76,6 @@ export default function UploadFile({ setActiveModal }) {
             url: URL.createObjectURL(file),
             uploaded: false,
             alreadyExist: hashAlreadyExists
-
           });
         };
 
@@ -94,7 +83,6 @@ export default function UploadFile({ setActiveModal }) {
         reader.readAsArrayBuffer(file);
       });
     });
-
 
     const results = await Promise.all(filePromises);
     setFiles(prev => [...prev, ...results]);
@@ -114,7 +102,6 @@ export default function UploadFile({ setActiveModal }) {
       return updatedFiles;
     });
   };
-
 
   async function uploadFileDetails({
     user_id,
@@ -155,7 +142,6 @@ export default function UploadFile({ setActiveModal }) {
     }
   }
 
-
   async function verifyHashOnChain(hash, walletAddress) {
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
     const pubKey = new PublicKey(walletAddress);
@@ -170,16 +156,9 @@ export default function UploadFile({ setActiveModal }) {
       });
 
       if (!tx) continue;
-      // console.log("Transaction:", tx.transaction.signatures[0]);
 
       for (let ix of tx.transaction.message.instructions) {
         const programId = tx.transaction.message.accountKeys[ix.programIdIndex].toString();
-        // console.log("Program ID:", programId);
-        // console.log("MEMO PROGRAM_ID:", MEMO_PROGRAM_ID.toString());
-        // console.log("Instruction:", ix);
-        // console.log("Instruction Data (base64):", ix.data);
-        // console.log("try  out",)
-
 
         if (programId === MEMO_PROGRAM_ID.toString()) {
           const memoBytes = bs58.decode(ix.data);
@@ -193,18 +172,15 @@ export default function UploadFile({ setActiveModal }) {
           }
         }
       }
-
     }
 
     console.log("❌ Hash not found on-chain.");
     return false;
   }
 
-
   async function storeHashOnChainForFile(fileObj) {
     console.log("hash storing for file:", fileObj.filename, fileObj.hash);
     setUploading(true);
-
 
     try {
       const transaction = new Transaction().add({
@@ -244,7 +220,7 @@ export default function UploadFile({ setActiveModal }) {
           const res = await uploadFileDetails({
             user_id: userid,
             file_name: fileObj.filename,
-            file_hash: memoData,                 // from chain (decoded)
+            file_hash: memoData,
             transaction_signature: sig,
             file_type: fileObj.fileType,
             file_size: fileObj.fileSize,
@@ -271,7 +247,7 @@ export default function UploadFile({ setActiveModal }) {
           if (userLoggedIn) {
             window.dispatchEvent(new Event("file-uploaded"));
           }
-          break; // memo found and processed; break out
+          break;
         }
       }
     } catch (err) {
@@ -280,27 +256,26 @@ export default function UploadFile({ setActiveModal }) {
       setUploading(false);
     }
   }
+
   const getFilePreview = (fileObj) => {
     const ext = fileObj.filename.split('.').pop().toLowerCase();
 
     if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
-      return <img src={fileObj.url} alt={fileObj.filename} className="w-20 h-20 object-cover rounded" />;
+      return <img src={fileObj.url} alt={fileObj.filename} className="w-16 h-16 object-cover rounded" />;
     } else if (ext === 'pdf') {
-      return <FileText className="w-10 h-10 text-red-600" />; // Your PDF icon component
+      return <FileText className="w-8 h-8 text-red-400" />;
     } else if (ext === 'txt') {
-      return <FileText className="w-10 h-10 text-gray-600" />; // Your TXT icon component
+      return <FileText className="w-8 h-8 text-gray-400" />;
     } else {
-      return <FileText className="w-10 h-10 text-gray-400" />; // Generic file icon
+      return <FileText className="w-8 h-8 text-gray-500" />;
     }
   };
-
 
   async function storeAllFiles() {
     const pendingFiles = files.filter(f => !f.uploaded);
     for (const file of pendingFiles) {
       await storeHashOnChainForFile(file);
     }
-
   }
 
   const handleDeleteFile = (index) => {
@@ -308,124 +283,142 @@ export default function UploadFile({ setActiveModal }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-8 py-6">
-      <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-        Upload a file to compute its SHA256 hash:
+    <div className="w-full flex flex-col items-start justify-center mt-16 px-8">
+      {/* Heading */}
+      <div className="flex items-center gap-3 mb-2">
+        <Upload className="w-6 h-6 text-blue-400" />
+        <h2 className="text-2xl font-semibold text-white">
+          Upload  Files Hash to Solana
+        </h2>
+      </div>
+
+      {/* Subtext */}
+      <p className="text-gray-400 mb-8 text-sm leading-relaxed flex gap-2">
+        Upload files to compute their SHA256 hash and store it permanently on the Solana blockchain.
+        <Info className="w-5 hover:cursor-pointer" onClick={() => setInfoTooltip(!infoTooltip)} />
       </p>
 
-      <div className="flex items-center gap-3 ">
+      <div className="w-full max-w-2xl mb-6">
         <input
           type="file"
           multiple
           onChange={(e) => { handleFileUpload(e); setActiveModal("upload"); }}
-          className="block w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 h-14 p-4 "
+          className="w-full px-4 py-3 bg-[#1E1E1E] text-gray-200 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-600 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-800 file:text-gray-300 file:cursor-pointer hover:file:bg-gray-700"
         />
-        {files.length > 0 && (
-          <button
-            onClick={() => setFiles([])}
-            className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 p-2 rounded transition"
-          >
-            <Trash size={18} />
-          </button>
-        )}
       </div>
 
+      {fileloading && (
+        <div className="w-full max-w-2xl mb-6">
+          <LoaderAnimation />
+        </div>
+      )}
+
       {files.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-6">
+        <div className="w-full max-w-2xl space-y-4 mb-6">
           {files.map((fileObj, index) => (
             <div
               key={index}
-              className={`p-5 rounded-lg border flex-shrink-0 w-full sm:w-[48%] lg:w-[%] transition
-          ${fileObj.uploaded
-                  ? 'bg-green-100 dark:bg-green-950 border-green-500 dark:border-green-400'
-                  : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700/40'}`}
+              className={`border rounded-xl p-5 shadow-lg transition-all duration-200 ${fileObj.uploaded
+                ? 'bg-gradient-to-br from-green-950/40 to-gray-900/40 border-green-500/30'
+                : 'bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700'
+                }`}
             >
-              {getFilePreview(fileObj)}
-
-              <p className="truncate text-gray-800 dark:text-gray-300 text-lg">
-                {fileObj.filename}
-              </p>
-
-              <div className="bg-gray-800/60 my-4 hover:bg-gray-800 rounded-xl p-3 transition-all duration-300 shadow-sm border border-gray-700">
-                <span className="f text-gray-900 dark:text-gray-100">SHA256:</span>
-                <p className="truncate text-gray-800 dark:text-gray-300">{fileObj.hash}</p>
-              </div>
-
-              {fileObj.uploaded ? (
-                // ✅ Uploaded state
-                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-4 mt-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-green-600 font-semibold">
-                    <CircleCheckBig size={22} className="text-green-600" />
-                    <span>File Uploaded Successfully</span>
-                  </div>
-                  <div className="text-sm text-gray-700 font-medium">
-                    <span className="text-gray-500">SOL Spent:</span>{" "}
-                    <span className="text-green-700">{fileObj.actualSolUsed.toFixed(6)} SOL</span>
-                  </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-blue-500/10 rounded-lg">
+                  {getFilePreview(fileObj)}
                 </div>
+                <div className="flex-1">
+                  <p className="text-gray-100 font-semibold text-base mb-2 truncate">
+                    {fileObj.filename}
+                  </p>
 
-              ) : (
-                // ⏳ Pending state
-                <>
-                  {!fileObj.alreadyExist && (
-                    <>
-                      <p className="text-lg text-green-300">
-                        Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
+                  <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-3 mb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-gray-500 text-xs font-medium">SHA256:</span>
+                    </div>
+                    <p className="text-gray-300 font-mono text-xs break-all">{fileObj.hash}</p>
+                  </div>
+
+                  {fileObj.uploaded ? (
+                    <div className="bg-green-950/40 border border-green-500/30 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-green-400 font-semibold text-sm mb-1">
+                        <CircleCheckBig size={18} />
+                        <span>File Uploaded Successfully</span>
+                      </div>
+                      <p className="text-gray-400 text-xs">
+                        <span>SOL Spent:</span>{" "}
+                        <span className="text-green-400">{fileObj.actualSolUsed.toFixed(6)} SOL</span>
                       </p>
+                    </div>
+                  ) : (
+                    <>
+                      {!fileObj.alreadyExist && (
+                        <>
+                          <p className="text-blue-400 text-sm mb-2">
+                            Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
+                          </p>
 
-                      <input
-                        type="text"
-                        placeholder="Add note for the file (e.g., degree certificate)"
-                        value={fileObj.note}
-                        onChange={(e) => handleNoteChange(index, e.target.value)}
-                        className="w-full my-3 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
+                          <input
+                            type="text"
+                            placeholder="Add note (e.g., degree certificate)"
+                            value={fileObj.note}
+                            onChange={(e) => handleNoteChange(index, e.target.value)}
+                            className="w-full mb-3 px-3 py-2 bg-[#1E1E1E] text-gray-200 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </>
+                      )}
+
+                      {fileObj.alreadyExist && (
+                        <p className="text-yellow-500 text-sm mb-2">
+                          This file's hash already exists on-chain.
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteFile(index)}
+                          className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                        >
+                          <Trash size={16} />
+                        </button>
+                        <button
+                          onClick={() => storeHashOnChainForFile(fileObj)}
+                          className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${uploading || fileObj.alreadyExist
+                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
+                            }`}
+                          disabled={uploading || fileObj.alreadyExist}
+                        >
+                          {uploading ? "Uploading..." : "Store on Chain"}
+                        </button>
+                      </div>
                     </>
                   )}
-
-                  {fileObj.alreadyExist && (
-                    <span className="text-sm text-yellow-600">
-                      This file's hash already exists on-chain.
-                    </span>
-                  )}
-                  <div className="flex items-center gap-3 mt-2">
-                    <button
-                      onClick={() => handleDeleteFile(index)}
-                      className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 p-2 rounded transition"
-                    >
-                      <Trash size={16} />
-                    </button>
-                    <button
-                      onClick={() => storeHashOnChainForFile(fileObj)}
-                      className={`px-4 py-1.5 bg-black dark:bg-purple-700 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-purple-800 transition ${uploading || fileObj.alreadyExist ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      disabled={uploading || fileObj.alreadyExist}
-                    >
-                      {uploading ? "Uploading..." : "Store on Chain"}
-                    </button>
-                  </div>
-                </>
-              )}
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {fileloading && (
-        <div className="mt-4">
-          <LoaderAnimation />
-        </div>
+      {uploading ? (
+        <LoaderAnimation />
+      ) : (
+        <button
+          onClick={() => storeAllFiles()}
+          disabled={files.length === 0 || uploading}
+          className={`w-full max-w-2xl py-3 rounded-lg font-semibold text-center transition-all duration-200 shadow-lg ${files.length > 0 && !uploading
+            ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transform hover:scale-[1.01]'
+            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+            }`}
+        >
+          {uploading ? <LoaderAnimation /> : "Store All Files Hash on Solana"}
+        </button>
       )}
-      <button
-        onClick={() => storeAllFiles()}
-        disabled={files.length === 0 || uploading}
-        className="w-full mt-10 py-3 px-6 bg-black dark:bg-purple-700 text-white font-semibold rounded-lg shadow hover:bg-gray-900 dark:hover:bg-purple-800 transition disabled:opacity-50"
-      >
-        {uploading ? <LoaderAnimation /> : "Store All Files Hash on Solana"}
-      </button>
 
       {showLink && (
-        <div className="mt-6 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700/40">
-          <p className="text-gray-700 dark:text-gray-300 font-medium mb-3">
+        <div className="mt-6 w-full max-w-2xl bg-gradient-to-br from-green-950/40 to-gray-900/40 border border-green-500/30 rounded-lg p-4">
+          <p className="text-green-400 font-semibold mb-3">
             File details uploaded successfully!
           </p>
 
@@ -434,22 +427,37 @@ export default function UploadFile({ setActiveModal }) {
               type="text"
               readOnly
               value={`${window.location.origin}/verify/${hash}`}
-              className="flex-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 bg-[#1E1E1E] border border-gray-700 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               onFocus={(e) => e.target.select()}
             />
             <button
               onClick={() =>
                 navigator.clipboard.writeText(`${window.location.origin}/verify/${hash}`)
               }
-              className="px-4 py-2 bg-gray-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 text-sm transition"
+              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg text-sm transition"
             >
               Copy
             </button>
           </div>
         </div>
       )}
+
+      {infoTooltip && (
+        <div className="absolute -top-[159px]  right-20 w-[500px] bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-lg z-50">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-white font-semibold">How Does This Work?</h4>
+            <button onClick={() => setInfoTooltip(false)} className="text-gray-400 hover:text-gray-200">&times;</button>
+          </div>
+          <p className="text-gray-300 text-sm leading-relaxed mb-3">
+            <strong className="text-white">For You (Uploader):</strong><br />
+            When you upload a file, we create a unique digital fingerprint (hash) of your document. This fingerprint is stored permanently on the blockchain - think of it like a digital notary stamp that can never be erased or changed.
+          </p>
+          <p className="text-gray-300 text-sm leading-relaxed">
+            <strong className="text-white">For Recipients:</strong><br />
+            Anyone who receives your document can verify its authenticity by uploading it to our verification page. If the fingerprint matches, they know the document is genuine and hasn't been altered - no technical knowledge required!
+          </p>
+        </div>
+      )}
     </div>
-
-  )
+  );
 }
-

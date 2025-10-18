@@ -61,7 +61,6 @@ export default function UploadForm() {
               : "opacity-0 translate-y-8 scale-95 pointer-events-none h-0 overflow-hidden p-0 border-0"
               }`}
           >
-            <h2 className="text-xl font-semibold mb-4 text-center text-purple-400">Upload & Store File</h2>
             <UploadFile setActiveModal={setActiveModal} />
           </div>
 
