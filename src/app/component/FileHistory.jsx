@@ -172,7 +172,7 @@ export default function FileHistory() {
                     <div className="p-2 bg-blue-500/10 dark:bg-blue-500/10 rounded-lg">
                         <FileText size={24} className="text-blue-500 dark:text-blue-500" />
                     </div>
-                    <span className="text-gray-900 dark:text-white bg-clip-text text-transparent">
+                    <span className="text-black dark:text-white bg-clip-text dark:text-transparent">
                         Your Files
                     </span>
                 </h2>

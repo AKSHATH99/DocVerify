@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useWallet } from '@solana/wallet-adapter-react';
 
+import {
+    WalletMultiButton,
+    WalletDisconnectButton,
+    WalletModalProvider
+} from "@solana/wallet-adapter-react-ui";
 export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
     const [authMethod, setAuthMethod] = useState("");
     const [formData, setFormData] = useState({ email: "", name: "", walletAddress: "" });
@@ -169,13 +174,8 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
                             </div>
                         )
                     ) : (
-                        // ✅ Connect Wallet Button
-                        <button
-                            onClick={connect}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition"
-                        >
-                            Connect Wallet
-                        </button>
+                        <WalletMultiButton/>
+                       
                     )}
 
                     {/* ✅ Status Messages */}
