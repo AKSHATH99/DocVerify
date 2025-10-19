@@ -10,6 +10,7 @@ import {
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import ThemeToggle from "./ThemeToggler";
+import shieldImg from '../../../public/uploads/Shield-2--Streamline-Core.png';
 
 const HeaderComponent = () => {
     const [isDarkMode, setIsDarkMode] = React.useState(true);
@@ -83,6 +84,17 @@ const HeaderComponent = () => {
             <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
                 {/* Brand Section */}
                 <div className="flex items-center space-x-3">
+                    {/* Shield / Logo from repo root */}
+                    <div className="flex-shrink-0">
+                        <img
+                            src={shieldImg.src}
+                            alt="DocVerify shield"
+                            width={48}
+                            height={48}
+                            className="rounded-md shadow-sm"
+                        />
+                    </div>
+
                     <div className="px-3 py-2 rounded-xl backdrop-blur-sm bg-gray-100/60 dark:bg-white/5">
                         <h1 className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text dark:from-blue-400 dark:to-purple-500">
                             DocVerify
