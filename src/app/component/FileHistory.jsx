@@ -166,13 +166,13 @@ export default function FileHistory() {
     );
 
     return (
-        <div className="space-y-6">
+<div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center space-x-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                        <FileText size={24} className="text-blue-500" />
+                    <div className="p-2 bg-blue-500/10 dark:bg-blue-500/10 rounded-lg">
+                        <FileText size={24} className="text-blue-500 dark:text-blue-500" />
                     </div>
-                    <span className=" text-white bg-clip-text text-transparent">
+                    <span className="text-gray-900 dark:text-white bg-clip-text text-transparent">
                         Your Files
                     </span>
                 </h2>
@@ -184,32 +184,32 @@ export default function FileHistory() {
                     placeholder="Search by name, type, hash, or wallet..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full border border-gray-700 rounded-lg p-3 pl-10 pr-10 bg-gray-800/50 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-3 pl-10 pr-10 bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
                 <Search
                     size={18}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
                 />
                 {searchQuery && (
                     <button
                         onClick={() => setSearchQuery("")}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     >
                         <X size={18} />
                     </button>
                 )}
             </div>
 
-            <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-3 space-y-3">
+            <div className="bg-gray-100 dark:bg-gray-800/30 border border-gray-300 dark:border-gray-700 rounded-lg p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-sm text-gray-400">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                         <Filter size={16} />
                         <span>Filter By </span>
                     </div>
                     {(filterType || searchQuery || selectedFileType) && (
                         <button
                             onClick={clearAllFilters}
-                            className="text-xs text-blue-400 hover:text-blue-300 flex items-center space-x-1"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center space-x-1"
                         >
                             <X size={14} />
                             <span>Clear all</span>
@@ -226,8 +226,8 @@ export default function FileHistory() {
                                 if (type !== "Type") setSelectedFileType("");
                             }}
                             className={`px-2 py-1 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${filterType === type
-                                ? "bg-blue-600 text-white shadow-lg"
-                                : "bg-gray-700/50 text-gray-300 hover:bg-gray-700 border border-gray-600"
+                                ? "bg-blue-600 dark:bg-blue-600 text-white dark:text-white shadow-lg"
+                                : "bg-gray-200 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
                                 }`}
                         >
                             {type === "Type" && <FileType size={16} />}
@@ -241,7 +241,7 @@ export default function FileHistory() {
                         <select
                             value={selectedFileType}
                             onChange={(e) => setSelectedFileType(e.target.value)}
-                            className="px-4 py-2 rounded-lg text-sm bg-gray-700 text-gray-200 border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-4 py-2 rounded-lg text-sm bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-200 border border-blue-500/50 dark:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All types</option>
                             {uniqueFileTypes.map(type => (
@@ -253,7 +253,7 @@ export default function FileHistory() {
                     {filterType === "Date" && (
                         <button
                             onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-900/40 text-blue-300 hover:bg-blue-900/60 border border-blue-500/50 flex items-center space-x-2"
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60 border border-blue-500/50 dark:border-blue-500/50 flex items-center space-x-2"
                         >
                             <Calendar size={16} />
                             <span>{sortOrder === "newest" ? "↓ Newest" : "↑ Oldest"}</span>
@@ -265,48 +265,48 @@ export default function FileHistory() {
             </div>
 
             {filteredFiles.length !== files.length && (
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                     Showing {filteredFiles.length} of {files.length} files
                 </div>
             )}
 
             {!files.length ? (
-                <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-12 text-center">
-                    <FileText size={48} className="text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-400">No files uploaded yet.</p>
+                <div className="bg-gray-100 dark:bg-gray-800/40 border border-gray-300 dark:border-gray-700 rounded-lg p-12 text-center">
+                    <FileText size={48} className="text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">No files uploaded yet.</p>
                 </div>
             ) : filteredFiles.length === 0 ? (
-                <div className="bg-gray-800/40 border border-gray-700 rounded-lg p-12 text-center">
-                    <Search size={48} className="text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-400">No files match your search criteria.</p>
+                <div className="bg-gray-100 dark:bg-gray-800/40 border border-gray-300 dark:border-gray-700 rounded-lg p-12 text-center">
+                    <Search size={48} className="text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">No files match your search criteria.</p>
                     <button
                         onClick={clearAllFilters}
-                        className="mt-4 text-sm text-blue-400 hover:text-blue-300"
+                        className="mt-4 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                     >
                         Clear filters
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+                <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-700 scrollbar-track-gray-200 dark:scrollbar-track-gray-900">
                     {filteredFiles.map((file) => (
                         <div
                             key={file.id}
-                            className="group bg-gradient-to-br from-black/20 to-black/40 hover:from-black/90 hover:to-black/70 rounded-xl p-4 transition-all duration-300 border border-gray-700 hover:border-gray-600 hover:shadow-lg hover:shadow-blue-500/5"
+                            className="group bg-gradient-to-br from-white/90 to-white/70 dark:from-black/20 dark:to-black/40 hover:from-white dark:hover:from-black/90 hover:to-white dark:hover:to-black/70 rounded-xl p-4 transition-all duration-300 border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-lg hover:shadow-blue-500/5"
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <div className="flex items-center space-x-3 min-w-0 flex-1">
-                                    <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
+                                    <div className="p-2 bg-blue-500/10 dark:bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 dark:group-hover:bg-blue-500/20 transition-colors">
                                         <FileType size={20} className="" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-semibold text-gray-100 truncate group-hover:text-blue-300 transition-colors">
+                                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
                                             {file.file_name}
                                         </p>
                                         <div className="flex items-center space-x-2 mt-1">
-                                            <span className="text-xs px-2 py-0.5 bg-gray-700/50 rounded-md text-gray-400">
+                                            <span className="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700/50 rounded-md text-gray-600 dark:text-gray-400">
                                                 {file.file_type}
                                             </span>
-                                            <span className="text-xs text-gray-500">
+                                            <span className="text-xs text-gray-500 dark:text-gray-500">
                                                 {(file.file_size / 1024).toFixed(2)} KB
                                             </span>
                                         </div>
@@ -316,17 +316,17 @@ export default function FileHistory() {
                             <div className="flex items-center space-x-2 p-2  mb-2">
                                 <Calendar size={14} className=" shrink-0" />
                                 <div className="min-w-0">
-                                    <div className="text-gray-300 text-xs truncate">
+                                    <div className="text-gray-700 dark:text-gray-300 text-xs truncate">
                                         {formatDate(file.created_at)}
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-2 text-sm">
-                                <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-800/50">
+                                <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800/50">
                                     <div className="flex items-center space-x-2 min-w-0">
                                         <Hash size={14} className="shrink-0" />
-                                        <span className="text-gray-400 text-xs">Hash:</span>
-                                        <code className="text-xs truncate flex-1 font-mono text-gray-300">
+                                        <span className="text-gray-600 dark:text-gray-400 text-xs">Hash:</span>
+                                        <code className="text-xs truncate flex-1 font-mono text-gray-800 dark:text-gray-300">
                                             {truncateHash(file.file_hash)}
                                         </code>
                                     </div>
@@ -334,7 +334,7 @@ export default function FileHistory() {
                                     {/* Copy Button */}
                                     <button
                                         onClick={() => navigator.clipboard.writeText(file.file_hash)}
-                                        className="ml-3 text-gray-400 hover:text-blue-400 text-xs font-medium transition-colors"
+                                        className="ml-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-medium transition-colors"
                                         title="Copy hash"
                                     >
                                         <Copy className="" size={16} />
@@ -342,7 +342,7 @@ export default function FileHistory() {
                                 </div>
 
                                 <div className="grid my-5 gap-2">
-                                    <div className="flex items-center space-x-2 p-3 text-[#6f5aea] rounded-lg border border-[#6f5aea]/30 bg-[#6f5aea]/10">
+                                    <div className="flex items-center space-x-2 p-3 text-[#6f5aea] dark:text-[#6f5aea] rounded-lg border border-[#6f5aea]/30 dark:border-[#6f5aea]/30 bg-[#6f5aea]/10 dark:bg-[#6f5aea]/10">
                                         <Wallet size={14} className="shrink-0" />
                                         <div className="min-w-0">
                                             <div className="  ">Wallet</div>

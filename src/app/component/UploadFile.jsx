@@ -287,13 +287,13 @@ export default function UploadFile({ setActiveModal }) {
       {/* Heading */}
       <div className="flex items-center gap-3 mb-2">
         <Upload className="w-6 h-6 text-blue-400" />
-        <h2 className="text-2xl font-semibold text-white">
-          Upload  Files Hash to Solana
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          Upload Files Hash to Solana
         </h2>
       </div>
 
       {/* Subtext */}
-      <p className="text-gray-400 mb-8 text-sm leading-relaxed flex gap-2">
+      <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm leading-relaxed flex gap-2">
         Upload files to compute their SHA256 hash and store it permanently on the Solana blockchain.
         <Info className="w-5 hover:cursor-pointer" onClick={() => setInfoTooltip(!infoTooltip)} />
       </p>
@@ -303,7 +303,7 @@ export default function UploadFile({ setActiveModal }) {
           type="file"
           multiple
           onChange={(e) => { handleFileUpload(e); setActiveModal("upload"); }}
-          className="w-full px-4 py-3 bg-[#1E1E1E] text-gray-200 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-600 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-800 file:text-gray-300 file:cursor-pointer hover:file:bg-gray-700"
+          className="w-full px-4 py-3 bg-gray-100 dark:bg-[#1E1E1E] text-gray-900 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 dark:hover:border-gray-600 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-200 dark:file:bg-gray-800 file:text-gray-800 dark:file:text-gray-300 file:cursor-pointer hover:file:bg-gray-300 dark:hover:file:bg-gray-700"
         />
       </div>
 
@@ -319,42 +319,42 @@ export default function UploadFile({ setActiveModal }) {
             <div
               key={index}
               className={`border rounded-xl p-5 shadow-lg transition-all duration-200 ${fileObj.uploaded
-                ? 'bg-gradient-to-br from-green-950/40 to-gray-900/40 border-green-500/30'
-                : 'bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700'
+                ? 'bg-gradient-to-br from-green-200/20 dark:from-green-950/40 to-gray-100/10 dark:to-gray-900/40 border-green-400/30 dark:border-green-500/30'
+                : 'bg-gradient-to-br from-gray-50 dark:from-gray-900 to-gray-100 dark:to-gray-800 border-gray-300 dark:border-gray-700'
                 }`}
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
+                <div className="p-3 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg">
                   {getFilePreview(fileObj)}
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-100 font-semibold text-base mb-2 truncate">
+                  <p className="text-gray-900 dark:text-gray-100 font-semibold text-base mb-2 truncate">
                     {fileObj.filename}
                   </p>
 
-                  <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-lg p-3 mb-3">
+                  <div className="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-800 rounded-lg p-3 mb-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-gray-500 text-xs font-medium">SHA256:</span>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs font-medium">SHA256:</span>
                     </div>
-                    <p className="text-gray-300 font-mono text-xs break-all">{fileObj.hash}</p>
+                    <p className="text-gray-700 dark:text-gray-300 font-mono text-xs break-all">{fileObj.hash}</p>
                   </div>
 
                   {fileObj.uploaded ? (
-                    <div className="bg-green-950/40 border border-green-500/30 rounded-lg p-3">
-                      <div className="flex items-center gap-2 text-green-400 font-semibold text-sm mb-1">
+                    <div className="bg-green-200/20 dark:bg-green-950/40 border border-green-400/30 dark:border-green-500/30 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-semibold text-sm mb-1">
                         <CircleCheckBig size={18} />
                         <span>File Uploaded Successfully</span>
                       </div>
-                      <p className="text-gray-400 text-xs">
+                      <p className="text-gray-600 dark:text-gray-400 text-xs">
                         <span>SOL Spent:</span>{" "}
-                        <span className="text-green-400">{fileObj.actualSolUsed.toFixed(6)} SOL</span>
+                        <span className="text-green-600 dark:text-green-400">{fileObj.actualSolUsed.toFixed(6)} SOL</span>
                       </p>
                     </div>
                   ) : (
                     <>
                       {!fileObj.alreadyExist && (
                         <>
-                          <p className="text-blue-400 text-sm mb-2">
+                          <p className="text-blue-600 dark:text-blue-400 text-sm mb-2">
                             Estimated cost: {fileObj.estimatedSol.toFixed(6)} SOL
                           </p>
 
@@ -363,13 +363,13 @@ export default function UploadFile({ setActiveModal }) {
                             placeholder="Add note (e.g., degree certificate)"
                             value={fileObj.note}
                             onChange={(e) => handleNoteChange(index, e.target.value)}
-                            className="w-full mb-3 px-3 py-2 bg-[#1E1E1E] text-gray-200 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full mb-3 px-3 py-2 bg-gray-100 dark:bg-[#1E1E1E] text-gray-900 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                           />
                         </>
                       )}
 
                       {fileObj.alreadyExist && (
-                        <p className="text-yellow-500 text-sm mb-2">
+                        <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-2">
                           This file's hash already exists on-chain.
                         </p>
                       )}
@@ -377,14 +377,14 @@ export default function UploadFile({ setActiveModal }) {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleDeleteFile(index)}
-                          className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition"
                         >
                           <Trash size={16} />
                         </button>
                         <button
                           onClick={() => storeHashOnChainForFile(fileObj)}
                           className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${uploading || fileObj.alreadyExist
-                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            ? 'bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed'
                             : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
                             }`}
                           disabled={uploading || fileObj.alreadyExist}
@@ -409,7 +409,7 @@ export default function UploadFile({ setActiveModal }) {
           disabled={files.length === 0 || uploading}
           className={`w-full max-w-2xl py-3 rounded-lg font-semibold text-center transition-all duration-200 shadow-lg ${files.length > 0 && !uploading
             ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transform hover:scale-[1.01]'
-            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+            : 'bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed'
             }`}
         >
           {uploading ? <LoaderAnimation /> : "Store All Files Hash on Solana"}
@@ -417,8 +417,8 @@ export default function UploadFile({ setActiveModal }) {
       )}
 
       {showLink && (
-        <div className="mt-6 w-full max-w-2xl bg-gradient-to-br from-green-950/40 to-gray-900/40 border border-green-500/30 rounded-lg p-4">
-          <p className="text-green-400 font-semibold mb-3">
+        <div className="mt-6 w-full max-w-2xl bg-gradient-to-br from-green-200/20 dark:from-green-950/40 to-gray-100/10 dark:to-gray-900/40 border border-green-400/30 dark:border-green-500/30 rounded-lg p-4">
+          <p className="text-green-600 dark:text-green-400 font-semibold mb-3">
             File details uploaded successfully!
           </p>
 
@@ -427,7 +427,7 @@ export default function UploadFile({ setActiveModal }) {
               type="text"
               readOnly
               value={`${window.location.origin}/verify/${hash}`}
-              className="flex-1 bg-[#1E1E1E] border border-gray-700 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               onFocus={(e) => e.target.select()}
             />
             <button
@@ -443,21 +443,22 @@ export default function UploadFile({ setActiveModal }) {
       )}
 
       {infoTooltip && (
-        <div className="absolute -top-[159px]  right-20 w-[500px] bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-lg z-50">
+        <div className="absolute -top-[159px] right-20 w-[500px] bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 shadow-lg z-50 transition-colors duration-300">
           <div className="flex justify-between items-center mb-2">
-            <h4 className="text-white font-semibold">How Does This Work?</h4>
-            <button onClick={() => setInfoTooltip(false)} className="text-gray-400 hover:text-gray-200">&times;</button>
+            <h4 className="text-gray-900 dark:text-white font-semibold">How Does This Work?</h4>
+            <button onClick={() => setInfoTooltip(false)} className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">&times;</button>
           </div>
-          <p className="text-gray-300 text-sm leading-relaxed mb-3">
-            <strong className="text-white">For You (Uploader):</strong><br />
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
+            <strong className="text-gray-900 dark:text-white">For You (Uploader):</strong><br />
             When you upload a file, we create a unique digital fingerprint (hash) of your document. This fingerprint is stored permanently on the blockchain - think of it like a digital notary stamp that can never be erased or changed.
           </p>
-          <p className="text-gray-300 text-sm leading-relaxed">
-            <strong className="text-white">For Recipients:</strong><br />
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+            <strong className="text-gray-900 dark:text-white">For Recipients:</strong><br />
             Anyone who receives your document can verify its authenticity by uploading it to our verification page. If the fingerprint matches, they know the document is genuine and hasn't been altered - no technical knowledge required!
           </p>
         </div>
       )}
     </div>
+
   );
 }

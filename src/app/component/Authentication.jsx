@@ -96,14 +96,16 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
     }, [connected, publicKey]);
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 text-black">
-            <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 text-black dark:text-white">
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-5">
-                    <h1 className="text-2xl font-semibold text-gray-800">Authentication</h1>
+                    <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+                        Authentication
+                    </h1>
                     <button
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700 text-lg transition"
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-lg transition"
                     >
                         ✕
                     </button>
@@ -114,14 +116,16 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
                         authMethod === "signup" ? (
                             // ✅ Show Signup Form
                             <div className="mt-4 space-y-4 text-left">
-                                <h2 className="text-lg font-semibold text-gray-800 text-center">Complete Signup</h2>
+                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 text-center">
+                                    Complete Signup
+                                </h2>
                                 <input
                                     type="email"
                                     name="email"
                                     placeholder="Enter your email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 />
                                 <input
                                     type="text"
@@ -129,19 +133,19 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
                                     placeholder="Enter your name"
                                     value={formData.name}
                                     onChange={handleChange}
-                                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 />
                                 <input
                                     type="text"
                                     name="walletAddress"
                                     value={publicKey.toString()}
                                     disabled
-                                    className="w-full border border-gray-200 bg-gray-100 text-gray-600 rounded-md px-3 py-2 cursor-not-allowed"
+                                    className="w-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md px-3 py-2 cursor-not-allowed"
                                 />
                                 <button
                                     onClick={handleSignup}
                                     disabled={loading}
-                                    className="w-full bg-purple-600 text-white font-medium px-4 py-2 rounded-md hover:bg-purple-700 transition"
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-md transition"
                                 >
                                     {loading ? "Processing..." : "Sign Up"}
                                 </button>
@@ -149,16 +153,16 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
                         ) : (
                             // ✅ Show Authenticate with Wallet Button
                             <div>
-                                <p className="text-green-600 mb-4">
+                                <p className="text-green-600 dark:text-green-400 mb-4">
                                     Wallet connected:
-                                    <span className="block font-mono text-sm break-all mt-1 text-gray-800 bg-gray-100 rounded-md p-2 border border-gray-300">
+                                    <span className="block font-mono text-sm break-all mt-1 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-md p-2 border border-gray-300 dark:border-gray-700">
                                         {publicKey.toString()}
                                     </span>
                                 </p>
                                 <button
                                     onClick={handleWalletAuth}
                                     disabled={loading}
-                                    className="w-full bg-purple-600 text-white font-medium px-4 py-2 rounded-md hover:bg-purple-700 transition"
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-md transition"
                                 >
                                     {loading ? "Processing..." : "Authenticate with Wallet"}
                                 </button>
@@ -168,17 +172,18 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
                         // ✅ Connect Wallet Button
                         <button
                             onClick={connect}
-                            className="w-full bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition"
                         >
                             Connect Wallet
                         </button>
                     )}
 
                     {/* ✅ Status Messages */}
-                    {success && <p className="text-green-600 mt-3 text-sm">{success}</p>}
-                    {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
+                    {success && <p className="text-green-600 dark:text-green-400 mt-3 text-sm">{success}</p>}
+                    {error && <p className="text-red-600 dark:text-red-400 mt-3 text-sm">{error}</p>}
                 </div>
             </div>
         </div>
+
     );
 }

@@ -23,10 +23,12 @@ export default function UploadForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-gray-100 to-gray-50 text-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 dark:text-white transition-colors duration-500">
       <HeaderComponent />
+
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 bg-gray-900/70 border-r border-gray-800 p-4 overflow-y-auto backdrop-blur-sm hidden md:block">
+        {/* Sidebar */}
+        <aside className="w-80 bg-white/60 dark:bg-gray-900/70 border-r border-gray-200 dark:border-gray-800 p-4 overflow-y-auto backdrop-blur-sm hidden md:block transition-colors duration-500">
           {activeModal !== "both" && (
             <div className="mt-4 mb-6">
               <button
@@ -44,48 +46,62 @@ export default function UploadForm() {
           )}
           <FileHistory activeModal={activeModal} setActiveModal={setActiveModal} />
         </aside>
-        <main className={`flex-1 p-8 flex flex-col items-center overflow-y-auto transition-all duration-700 ${activeModal === "both" ? "justify-start space-y-10" : "justify-center"
-          }`}>
+
+        {/* Main Section */}
+        <main
+          className={`flex-1 p-8 flex flex-col items-center overflow-y-auto transition-all duration-700 ${activeModal === "both" ? "justify-start space-y-10" : "justify-center"
+            }`}
+        >
+          {/* Verify Section */}
           <div
-            className={`w-full max-w-4xl bg-gray-900/70 rounded-2xl border border-gray-800 p-6 shadow-md transition-all duration-700 ease-in-out ${activeModal === "both" || activeModal === "verify"
-              ? "opacity-100 translate-y-0 scale-100"
-              : "opacity-0 -translate-y-8 scale-95 pointer-events-none h-0 overflow-hidden p-0 border-0"
+            className={`w-full max-w-4xl bg-white/70 dark:bg-gray-900/70 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-md transition-all duration-700 ease-in-out ${activeModal === "both" || activeModal === "verify"
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 -translate-y-8 scale-95 pointer-events-none h-0 overflow-hidden p-0 border-0"
               }`}
           >
             <VerifyHash setActiveModal={setActiveModal} />
           </div>
 
+          {/* Upload Section */}
           <div
-            className={`w-full max-w-4xl bg-gray-900/70 rounded-2xl border border-gray-800 p-6 shadow-md transition-all duration-700 ease-in-out ${activeModal === "both" || activeModal === "upload"
-              ? "opacity-100 translate-y-0 scale-100"
-              : "opacity-0 translate-y-8 scale-95 pointer-events-none h-0 overflow-hidden p-0 border-0"
+            className={`w-full max-w-4xl bg-white/70 dark:bg-gray-900/70 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-md transition-all duration-700 ease-in-out ${activeModal === "both" || activeModal === "upload"
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 translate-y-8 scale-95 pointer-events-none h-0 overflow-hidden p-0 border-0"
               }`}
           >
             <UploadFile setActiveModal={setActiveModal} />
           </div>
 
+          {/* Switch Prompt */}
           {
-            <div className="h-10 mt-10 p-5 rounded-lg border border-dashed border-gray-700 flex items-center justify-center text-gray-400">
+            <div className="h-10 mt-10 p-5 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors duration-500">
               {activeModal === "upload" && (
-                <>Want to verify a file? Click <button
-                  onClick={() => setActiveModal("verify")}
-                  className="text-purple-400 underline hover:text-purple-300 ml-1"
-                >
-                  here
-                </button></>
+                <>
+                  Want to verify a file? Click{" "}
+                  <button
+                    onClick={() => setActiveModal("verify")}
+                    className="text-purple-600 dark:text-purple-400 underline hover:text-purple-500 dark:hover:text-purple-300 ml-1"
+                  >
+                    here
+                  </button>
+                </>
               )}
               {activeModal === "verify" && (
-                <>Want to upload a file? Click <button
-                  onClick={() => setActiveModal("upload")}
-                  className="text-purple-400 underline hover:text-purple-300 ml-1"
-                >
-                  here
-                </button></>
+                <>
+                  Want to upload a file? Click{" "}
+                  <button
+                    onClick={() => setActiveModal("upload")}
+                    className="text-purple-600 dark:text-purple-400 underline hover:text-purple-500 dark:hover:text-purple-300 ml-1"
+                  >
+                    here
+                  </button>
+                </>
               )}
             </div>
           }
         </main>
       </div>
     </div>
+
   );
 }
