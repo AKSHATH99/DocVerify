@@ -20,87 +20,92 @@ export default function UploadFile({ setActiveModal }) {
   const [fileloading, setFileLoading] = useState(false);
   const [infoTooltip, setInfoTooltip] = useState(false);
   let estimatedSol = 0;
+  const [error, setError] = useState(null);
 
 
   const handleFileUpload = async (e) => {
     setFileLoading(true);
-    console.log("Files selected:", e.target.files);
-    const selectedFiles = Array.from(e.target.files);
+    try {
+      if (!wallet.connected || !wallet.publicKey) {
+        throw new Error("Please connect your wallet before uploading files.");
+      }
 
-    const filePromises = selectedFiles.map(async (file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
+      const selectedFiles = Array.from(e.target.files);
+      const filePromises = selectedFiles.map(async (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
 
-        reader.onload = async () => {
-          const wordArray = CryptoJS.lib.WordArray.create(reader.result);
-          const sha256Hash = CryptoJS.SHA256(wordArray).toString();
-
-          const hashAlreadyExists = await verifyHashOnChain(sha256Hash, wallet.publicKey.toString());
-
-          if (hashAlreadyExists) {
-            console.log("Hash already exists on-chain. Skipping upload for file:", file.name);
-            setFiles(prevFiles => {
-              return prevFiles.map(f =>
-                f.hash === sha256Hash && f.filename === file.name
-                  ? { ...f, uploaded: true, actualSolUsed: 0, }
-                  : f
-              );
-            });
-          } else {
+          reader.onload = async () => {
             try {
-              const latestBlockhash = await connection.getLatestBlockhash();
+              const wordArray = CryptoJS.lib.WordArray.create(reader.result);
+              const sha256Hash = CryptoJS.SHA256(wordArray).toString();
 
-              const dummyTx = new Transaction({
-                feePayer: wallet.publicKey || new PublicKey("11111111111111111111111111111111"),
-                recentBlockhash: latestBlockhash.blockhash,
-              }).add({
-                keys: [],
-                programId: MEMO_PROGRAM_ID,
-                data: Buffer.from(sha256Hash, "utf8"),
+              const hashAlreadyExists = await verifyHashOnChain(sha256Hash, wallet.publicKey.toString());
+
+              if (hashAlreadyExists) {
+                setFiles(prevFiles => prevFiles.map(f =>
+                  f.hash === sha256Hash && f.filename === file.name
+                    ? { ...f, uploaded: true, actualSolUsed: 0 }
+                    : f
+                ));
+              } else {
+                try {
+                  const latestBlockhash = await connection.getLatestBlockhash();
+
+                  const dummyTx = new Transaction({
+                    feePayer: wallet.publicKey,
+                    recentBlockhash: latestBlockhash.blockhash,
+                  }).add({
+                    keys: [],
+                    programId: MEMO_PROGRAM_ID,
+                    data: Buffer.from(sha256Hash, "utf8"),
+                  });
+
+                  const fee = await connection.getFeeForMessage(dummyTx.compileMessage());
+                  estimatedSol = fee.value / 1e9;
+                } catch (err) {
+                  console.error("Error estimating fee:", err);
+                  setError("Failed to estimate transaction fee.");
+                  estimatedSol = 0;
+                }
+              }
+
+              resolve({
+                filename: file.name || "Unknown",
+                fileSize: file.size,
+                fileType: file.type || "Unknown",
+                hash: sha256Hash,
+                note: "",
+                estimatedSol: estimatedSol || 0,
+                url: URL.createObjectURL(file),
+                uploaded: false,
+                alreadyExist: hashAlreadyExists
               });
-
-              const fee = await connection.getFeeForMessage(dummyTx.compileMessage());
-              estimatedSol = fee.value / 1e9;
             } catch (err) {
-              console.error("Error estimating fee:", err);
+              console.error("File read/processing error:", err);
+              setError("Error processing file.");
+              reject(err);
             }
-          }
+          };
 
-          resolve({
-            filename: file.name || "Unknown",
-            fileSize: file.size,
-            fileType: file.type || "Unknown",
-            hash: sha256Hash,
-            note: "",
-            estimatedSol: estimatedSol ? estimatedSol : 0,
-            url: URL.createObjectURL(file),
-            uploaded: false,
-            alreadyExist: hashAlreadyExists
-          });
-        };
+          reader.onerror = (err) => {
+            console.error("FileReader error:", err);
+            setError("Error reading file.");
+            reject(err);
+          };
 
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
+          reader.readAsArrayBuffer(file);
+        });
       });
-    });
 
-    const results = await Promise.all(filePromises);
-    setFiles(prev => [...prev, ...results]);
-    setFileLoading(false);
-  };
-
-  useEffect(() => {
-    files.map(fileObj => {
-      console.log("Computed hash for file:", fileObj);
-    })
-  }, [files]);
-
-  const handleNoteChange = (index, newNote) => {
-    setFiles(prevFiles => {
-      const updatedFiles = [...prevFiles];
-      updatedFiles[index] = { ...updatedFiles[index], note: newNote };
-      return updatedFiles;
-    });
+      const results = await Promise.all(filePromises);
+      setFiles(prev => [...prev, ...results]);
+    } catch (err) {
+      console.error("File upload error:", err);
+      setError(err.message || "File upload failed.");
+    } finally {
+      setFileLoading(false);
+    }
   };
 
   async function uploadFileDetails({
@@ -130,7 +135,6 @@ export default function UploadFile({ setActiveModal }) {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || "Failed to upload file details");
       }
@@ -138,51 +142,55 @@ export default function UploadFile({ setActiveModal }) {
       return data;
     } catch (err) {
       console.error("Upload API error:", err.message);
+      setError("Failed to upload file details to server.");
       return { success: false, error: err.message };
     }
   }
 
   async function verifyHashOnChain(hash, walletAddress) {
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-    const pubKey = new PublicKey(walletAddress);
-    console.log("verifying hash:", hash);
-    console.log("public key:", pubKey.toString());
+    try {
+      if (!walletAddress) {
+        throw new Error("Wallet not connected. Please connect your wallet to verify files.");
+      }
 
-    const signatures = await connection.getSignaturesForAddress(pubKey, { limit: 20 });
+      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const pubKey = new PublicKey(walletAddress);
+      const signatures = await connection.getSignaturesForAddress(pubKey, { limit: 20 });
 
-    for (let sigInfo of signatures) {
-      const tx = await connection.getTransaction(sigInfo.signature, {
-        maxSupportedTransactionVersion: 0,
-      });
+      for (let sigInfo of signatures) {
+        const tx = await connection.getTransaction(sigInfo.signature, {
+          maxSupportedTransactionVersion: 0,
+        });
+        if (!tx) continue;
 
-      if (!tx) continue;
+        for (let ix of tx.transaction.message.instructions) {
+          const programId = tx.transaction.message.accountKeys[ix.programIdIndex].toString();
+          if (programId === MEMO_PROGRAM_ID.toString()) {
+            const memoBytes = bs58.decode(ix.data);
+            const memoData = new TextDecoder("utf-8").decode(memoBytes);
 
-      for (let ix of tx.transaction.message.instructions) {
-        const programId = tx.transaction.message.accountKeys[ix.programIdIndex].toString();
-
-        if (programId === MEMO_PROGRAM_ID.toString()) {
-          const memoBytes = bs58.decode(ix.data);
-          const memoData = new TextDecoder("utf-8").decode(memoBytes);
-
-          console.log("📝 Memo data:", memoData);
-
-          if (memoData === hash) {
-            console.log("✅ Hash found on-chain:", sigInfo.signature);
-            return true;
+            if (memoData === hash) {
+              return true;
+            }
           }
         }
       }
-    }
 
-    console.log("❌ Hash not found on-chain.");
-    return false;
+      return false;
+    } catch (err) {
+      console.error("Error verifying hash on-chain:", err);
+      setError("Error verifying hash on Solana blockchain.");
+      return false;
+    }
   }
 
   async function storeHashOnChainForFile(fileObj) {
-    console.log("hash storing for file:", fileObj.filename, fileObj.hash);
     setUploading(true);
-
     try {
+      if (!wallet.connected || !wallet.publicKey) {
+        throw new Error("Please connect your wallet before uploading to the blockchain.");
+      }
+
       const transaction = new Transaction().add({
         keys: [],
         programId: MEMO_PROGRAM_ID,
@@ -190,10 +198,7 @@ export default function UploadFile({ setActiveModal }) {
       });
 
       const sig = await wallet.sendTransaction(transaction, connection);
-      console.log("⏳ Waiting for confirmation...", sig);
-
       await connection.confirmTransaction(sig, "confirmed");
-      console.log("✅ Stored on-chain! Signature:", sig);
 
       const txInfo = await connection.getTransaction(sig, { commitment: 'confirmed' });
       const actualSolUsed = txInfo?.meta?.fee ? txInfo.meta.fee / 1e9 : 0;
@@ -201,20 +206,13 @@ export default function UploadFile({ setActiveModal }) {
       const tx = await connection.getTransaction(sig, {
         maxSupportedTransactionVersion: 0,
       });
-
-      if (!tx) {
-        console.log("⚠️ Transaction not found (maybe not confirmed yet)");
-        throw new Error("Transaction not found");
-      }
-
-      console.log("🔍 Full Transaction:", tx);
+      if (!tx) throw new Error("Transaction not found or not yet confirmed.");
 
       for (let ix of tx.transaction.message.instructions) {
         const programId = tx.transaction.message.accountKeys[ix.programIdIndex].toString();
         if (programId === MEMO_PROGRAM_ID.toString()) {
           const memoBytes = bs58.decode(ix.data);
           const memoData = new TextDecoder("utf-8").decode(memoBytes);
-          console.log("📝 Memo stored on-chain:", memoData);
 
           const userid = localStorage.getItem('user_id');
           const res = await uploadFileDetails({
@@ -229,19 +227,17 @@ export default function UploadFile({ setActiveModal }) {
           });
 
           if (!res || res.success === false) {
-            console.error("DB upload failed:", res);
-          } else {
-            console.log("✅ File details saved to DB for", fileObj.filename);
+            throw new Error("Failed to upload file details to DB.");
           }
 
           setShowLink(true);
-          setFiles(prevFiles => {
-            return prevFiles.map(f =>
+          setFiles(prevFiles =>
+            prevFiles.map(f =>
               f.hash === fileObj.hash && f.filename === fileObj.filename
                 ? { ...f, uploaded: true, actualSolUsed }
                 : f
-            );
-          });
+            )
+          );
 
           const userLoggedIn = localStorage.getItem("user_id");
           if (userLoggedIn) {
@@ -252,34 +248,53 @@ export default function UploadFile({ setActiveModal }) {
       }
     } catch (err) {
       console.error("Error uploading file to chain/db:", err);
+      setError(err.message || "Error uploading file to blockchain or database.");
     } finally {
       setUploading(false);
     }
   }
 
-  const getFilePreview = (fileObj) => {
-    const ext = fileObj.filename.split('.').pop().toLowerCase();
-
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
-      return <img src={fileObj.url} alt={fileObj.filename} className="w-16 h-16 object-cover rounded" />;
-    } else if (ext === 'pdf') {
-      return <FileText className="w-8 h-8 text-red-400" />;
-    } else if (ext === 'txt') {
-      return <FileText className="w-8 h-8 text-gray-400" />;
-    } else {
-      return <FileText className="w-8 h-8 text-gray-500" />;
-    }
-  };
-
   async function storeAllFiles() {
-    const pendingFiles = files.filter(f => !f.uploaded);
-    for (const file of pendingFiles) {
-      await storeHashOnChainForFile(file);
+    try {
+      if (!wallet.connected || !wallet.publicKey) {
+        throw new Error("Please connect your wallet before storing files on-chain.");
+      }
+
+      const pendingFiles = files.filter(f => !f.uploaded);
+      for (const file of pendingFiles) {
+        await storeHashOnChainForFile(file);
+      }
+    } catch (err) {
+      console.error("Error storing all files:", err);
+      setError(err.message || "Failed to store all files on-chain.");
     }
   }
 
   const handleDeleteFile = (index) => {
-    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+    try {
+      setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+    } catch (err) {
+      console.error("Error deleting file:", err);
+      setError("Failed to delete file from list.");
+    }
+  };
+
+  const getFilePreview = (fileObj) => {
+    try {
+      const ext = fileObj.filename.split('.').pop().toLowerCase();
+      if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+        return <img src={fileObj.url} alt={fileObj.filename} className="w-16 h-16 object-cover rounded" />;
+      } else if (ext === 'pdf') {
+        return <FileText className="w-8 h-8 text-red-400" />;
+      } else if (ext === 'txt') {
+        return <FileText className="w-8 h-8 text-gray-400" />;
+      } else {
+        return <FileText className="w-8 h-8 text-gray-500" />;
+      }
+    } catch (err) {
+      console.error("Error rendering file preview:", err);
+      return <FileText className="w-8 h-8 text-gray-500" />;
+    }
   };
 
   return (
@@ -456,6 +471,15 @@ export default function UploadFile({ setActiveModal }) {
             <strong className="text-gray-900 dark:text-white">For Recipients:</strong><br />
             Anyone who receives your document can verify its authenticity by uploading it to our verification page. If the fingerprint matches, they know the document is genuine and hasn't been altered - no technical knowledge required!
           </p>
+        </div>
+      )}
+      {error && (
+        <div className="mt-4 w-full max-w-2xl bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setError(null)}>
+            <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 5.652a1 1 0 00-1.414 0L10 8.586 7.066 5.652a1 1 0 10-1.414 1.414L8.586 10l-2.934 2.934a1 1 0 101.414 1.414L10 11.414l2.934 2.934a1 1 0 001.414-1.414L11.414 10l2.934-2.934a1 1 0 000-1.414z" /></svg>
+          </span>
         </div>
       )}
     </div>
