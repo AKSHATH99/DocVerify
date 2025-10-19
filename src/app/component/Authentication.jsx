@@ -24,7 +24,7 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
     const handleSignup = async () => {
         console.log(formData, "signup form data");
 
-        const signupRes = await fetch("http://localhost:3000/api/user/signup", {
+        const signupRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/signup`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -62,7 +62,7 @@ export default function Authentication({ onClose, loggedIn, setLoggedIn }) {
             const walletAddress = publicKey.toString();
 
             // 1️⃣ Try login
-            const loginRes = await fetch("http://localhost:3000/api/user/signin", {
+            const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/signin`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ wallet_address: walletAddress }),
