@@ -8,6 +8,7 @@ import { MEMO_PROGRAM_ID } from "@solana/spl-memo";
 import bs58 from 'bs58';
 import LoaderAnimation from './LoaderAnimation';
 import { FileText, Trash, CircleCheckBig, Upload, Info } from 'lucide-react';
+import Authentication from './Authentication';
 
 export default function UploadFile({ setActiveModal }) {
 
@@ -21,6 +22,41 @@ export default function UploadFile({ setActiveModal }) {
   const [infoTooltip, setInfoTooltip] = useState(false);
   let estimatedSol = 0;
   const [error, setError] = useState(null);
+  const [userLoggedIn, setUserLoggedIn] = useState(null);
+  const [loginCompleted, setLoginCompleted] = useState(false);
+  const [openAuthModal, setOpenAuthModal] = useState(false);
+  const [filedetailsToBeSaved, setFiledetailsToBeSaved] = useState([]);
+  const [UploadedRemainingFiles, setUploadedRemainingFiles] = useState(false);
+
+  useEffect(() => {
+    const userLoggedIn = localStorage.getItem("user_id");
+    if (userLoggedIn) {
+      setUserLoggedIn(userLoggedIn);
+    }
+  }, [])
+
+  useEffect(() => {
+    if (loginCompleted && filedetailsToBeSaved.length > 0) {
+      const userLoggedIn = localStorage.getItem("user_id");
+      if (!userLoggedIn) return;
+
+      const updatedDetails = filedetailsToBeSaved.map(file => ({
+        ...file,
+        user_id: userLoggedIn,
+      }));
+
+      Promise.all(updatedDetails.map(file => uploadFileDetails(file)))
+        .then(results => {
+          console.log("All pending files uploaded successfully:", results);
+          setFiledetailsToBeSaved([]);
+        })
+        .catch(err => {
+          console.error("Error uploading pending files:", err);
+        });
+      window.dispatchEvent(new Event("file-uploaded"));
+    }
+  }, [loginCompleted]);
+
 
 
   const handleFileUpload = async (e) => {
@@ -215,19 +251,32 @@ export default function UploadFile({ setActiveModal }) {
           const memoData = new TextDecoder("utf-8").decode(memoBytes);
 
           const userid = localStorage.getItem('user_id');
-          const res = await uploadFileDetails({
-            user_id: userid,
-            file_name: fileObj.filename,
-            file_hash: memoData,
-            transaction_signature: sig,
-            file_type: fileObj.fileType,
-            file_size: fileObj.fileSize,
-            note: fileObj.note,
-            wallet_address: wallet.publicKey.toString()
-          });
+          if (userid) {
+            const res = await uploadFileDetails({
+              user_id: userid,
+              file_name: fileObj.filename,
+              file_hash: memoData,
+              transaction_signature: sig,
+              file_type: fileObj.fileType,
+              file_size: fileObj.fileSize,
+              note: fileObj.note,
+              wallet_address: wallet.publicKey.toString()
+            });
 
-          if (!res || res.success === false) {
-            throw new Error("Failed to upload file details to DB.");
+            if (!res || res.success === false) {
+              throw new Error("Failed to upload file details to DB.");
+            }
+          } else {
+            setFiledetailsToBeSaved(prevDetails => [...prevDetails, {
+              user_id: null,
+              file_name: fileObj.filename,
+              file_hash: memoData,
+              transaction_signature: sig,
+              file_type: fileObj.fileType,
+              file_size: fileObj.fileSize,
+              note: fileObj.note,
+              wallet_address: wallet.publicKey.toString()
+            }]);
           }
 
           setShowLink(true);
@@ -364,6 +413,32 @@ export default function UploadFile({ setActiveModal }) {
                         <span>SOL Spent:</span>{" "}
                         <span className="text-green-600 dark:text-green-400">{fileObj.actualSolUsed.toFixed(6)} SOL</span>
                       </p>
+
+                      {!userLoggedIn && (
+                        <div className="mt-10 flex flex-col items-start space-y-2">
+                          {!UploadedRemainingFiles ? (
+                            <p className="text-yellow-600 dark:text-yellow-400 text-sm flex flex-wrap items-center">
+                              <span>
+                                Note: You are not logged in, so your file details are not saved in our database.
+                                Please{" "}
+                                <a
+                                  onClick={() => setOpenAuthModal(true)}
+                                  className="text-blue-600 dark:text-blue-400 underline cursor-pointer hover:opacity-80 ml-1"
+                                >
+                                  Login / Sign Up
+                                </a>{" "}
+                                to save your file details.
+                              </span>
+                            </p>
+                          ) : (
+                            <div className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
+                              <CircleCheckBig className="w-5 h-5 mr-2" />
+                              <span>Your remaining files have been uploaded successfully.</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                     </div>
                   ) : (
                     <>
@@ -431,31 +506,6 @@ export default function UploadFile({ setActiveModal }) {
         </button>
       )}
 
-      {showLink && (
-        <div className="mt-6 w-full max-w-2xl bg-gradient-to-br from-green-200/20 dark:from-green-950/40 to-gray-100/10 dark:to-gray-900/40 border border-green-400/30 dark:border-green-500/30 rounded-lg p-4">
-          <p className="text-green-600 dark:text-green-400 font-semibold mb-3">
-            File details uploaded successfully!
-          </p>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              readOnly
-              value={`${window.location.origin}/verify/${hash}`}
-              className="flex-1 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              onFocus={(e) => e.target.select()}
-            />
-            <button
-              onClick={() =>
-                navigator.clipboard.writeText(`${window.location.origin}/verify/${hash}`)
-              }
-              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg text-sm transition"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-      )}
 
       {infoTooltip && (
         <div className="absolute -top-[159px] right-20 w-[500px] bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 shadow-lg z-50 transition-colors duration-300">
@@ -481,6 +531,9 @@ export default function UploadFile({ setActiveModal }) {
             <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 5.652a1 1 0 00-1.414 0L10 8.586 7.066 5.652a1 1 0 10-1.414 1.414L8.586 10l-2.934 2.934a1 1 0 101.414 1.414L10 11.414l2.934 2.934a1 1 0 001.414-1.414L11.414 10l2.934-2.934a1 1 0 000-1.414z" /></svg>
           </span>
         </div>
+      )}
+      {openAuthModal && (
+        <Authentication onClose={() => setOpenAuthModal(false)} loggedIn={loginCompleted} setLoggedIn={setLoginCompleted} />
       )}
     </div>
 
